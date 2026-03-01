@@ -8,17 +8,14 @@
 import SwiftUI
 
 struct ContentView: View {
-    var body: some View {
-        VStack {
-            Image(systemName: "globe")
-                .imageScale(.large)
-                .foregroundStyle(.tint)
-            Text("Hello, world!")
-        }
-        .padding()
-    }
-}
+    @EnvironmentObject var viewModel: PriceTrackerViewModel
 
-#Preview {
-    ContentView()
+    var body: some View {
+        NavigationStack {
+            FeedView()
+                .navigationDestination(for: String.self) { symbol in
+                    SymbolDetailView(symbol: symbol)
+                }
+        }
+    }
 }

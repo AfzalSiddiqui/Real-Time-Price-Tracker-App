@@ -9,9 +9,12 @@ import SwiftUI
 
 @main
 struct Real_Time_Price_Tracker_AppApp: App {
+    @StateObject private var viewModel = PriceTrackerViewModel()
+
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            SplashScreenView()
+                .environmentObject(viewModel)
         }
     }
 }
