@@ -8,13 +8,13 @@
 import Foundation
 
 struct StockItem: Identifiable, Equatable {
-    let id: String          // ticker symbol e.g. "AAPL"
+    let id: String          // ticker e.g. "AAPL"
     let name: String
     let description: String
     var price: Double
     var previousPrice: Double
 
-    /// Compare current vs previous price to show direction arrow
+    // compares current vs old price
     var priceDirection: PriceDirection {
         if price > previousPrice { return .up }
         if price < previousPrice { return .down }
@@ -30,14 +30,14 @@ enum ConnectionStatus: Equatable {
     case connected, disconnected, connecting
 }
 
-// Wire format for WebSocket messages
+// used for encoding/decoding WebSocket JSON payload
 struct PriceUpdate: Codable, Equatable {
     let symbol: String
     let price: Double
     let timestamp: Date
 }
 
-// MARK: - Stock catalog (25 symbols)
+// MARK: - Catalog
 
 enum StockCatalog {
     static let symbols: [(symbol: String, name: String, description: String)] = [
@@ -93,16 +93,15 @@ enum StockCatalog {
          "Roblox operates an online entertainment platform where users can create, share, and play immersive 3D experiences built by its community of developers.")
     ]
 
-    /// Generates initial stock data with random base prices
     static func initialStocks() -> [StockItem] {
-        symbols.map { item in
-            let basePrice = Double.random(in: 20...500)
+        symbols.map { entry in
+            let base = Double.random(in: 20...500)
             return StockItem(
-                id: item.symbol,
-                name: item.name,
-                description: item.description,
-                price: basePrice,
-                previousPrice: basePrice  // same initially so direction = .unchanged
+                id: entry.symbol,
+                name: entry.name,
+                description: entry.description,
+                price: base,
+                previousPrice: base
             )
         }
     }

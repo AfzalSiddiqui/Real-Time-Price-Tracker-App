@@ -13,14 +13,16 @@ struct StockItemListView: View {
 
     var body: some View {
         HStack {
-            symbolInfo
+            tickerLabel
             Spacer()
-            priceInfo
+            priceLabel
         }
         .padding(.vertical, 4)
+        .listRowBackground(rowHighlight)
+        .animation(.easeInOut(duration: 0.3), value: isFlashing)
     }
 
-    private var symbolInfo: some View {
+    private var tickerLabel: some View {
         VStack(alignment: .leading, spacing: 4) {
             Text(stock.id)
                 .font(.headline)
@@ -30,20 +32,28 @@ struct StockItemListView: View {
         }
     }
 
-    private var priceInfo: some View {
+    private var priceLabel: some View {
         HStack(spacing: 4) {
             Text(stock.price, format: .currency(code: Constants.App.currencyCode))
                 .font(.body.monospacedDigit())
                 .fontWeight(.medium)
-
-            Image(systemName: arrowIcon)
-                .foregroundStyle(arrowColor)
+            Image(systemName: changeIcon)
+                .foregroundStyle(changeColor)
                 .font(.caption)
         }
     }
 
-    // green arrow up, red arrow down, gray dash
-    private var arrowIcon: String {
+    // brief highlight on price change
+    private var rowHighlight: Color? {
+        guard isFlashing else { return nil }
+        switch stock.priceDirection {
+        case .up: return .green.opacity(0.15)
+        case .down: return .red.opacity(0.15)
+        case .unchanged: return nil
+        }
+    }
+
+    private var changeIcon: String {
         switch stock.priceDirection {
         case .up: return "arrow.up"
         case .down: return "arrow.down"
@@ -51,7 +61,7 @@ struct StockItemListView: View {
         }
     }
 
-    private var arrowColor: Color {
+    private var changeColor: Color {
         switch stock.priceDirection {
         case .up: return .green
         case .down: return .red

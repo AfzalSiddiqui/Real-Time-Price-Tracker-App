@@ -8,34 +8,37 @@
 import SwiftUI
 
 struct FeedView: View {
-    @EnvironmentObject var viewModel: PriceTrackerViewModel
+    @EnvironmentObject var vm: PriceTrackerViewModel
 
     var body: some View {
-        List(viewModel.stocks) { stock in
+        List(vm.stocks) { stock in
             NavigationLink(value: stock.id) {
-                StockItemListView(stock: stock)
+                StockItemListView(
+                    stock: stock,
+                    isFlashing: vm.highlightedSymbols.contains(stock.id)
+                )
             }
         }
         .listStyle(.plain)
         .navigationTitle(Constants.App.title)
         .toolbar {
             ToolbarItem(placement: .topBarLeading) {
-                // connection indicator dot
                 Circle()
-                    .fill(statusColor)
+                    .fill(indicatorColor)
                     .frame(width: 12, height: 12)
             }
             ToolbarItem(placement: .topBarTrailing) {
-                Button(viewModel.isFeedActive ? Constants.Connection.stopButton : Constants.Connection.startButton) {
-                    viewModel.toggleFeed()
+                Button(vm.isFeedActive ? Constants.Connection.stopButton : Constants.Connection.startButton) {
+                    vm.toggleFeed()
                 }
                 .fontWeight(.semibold)
             }
         }
     }
 
-    private var statusColor: Color {
-        switch viewModel.connectionStatus {
+    // green = connected, red = offline, orange = in progress
+    private var indicatorColor: Color {
+        switch vm.connectionStatus {
         case .connected: return .green
         case .disconnected: return .red
         case .connecting: return .orange
