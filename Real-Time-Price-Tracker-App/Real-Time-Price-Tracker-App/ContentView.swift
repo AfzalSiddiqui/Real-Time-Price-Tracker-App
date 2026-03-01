@@ -2,7 +2,7 @@
 //  ContentView.swift
 //  Real-Time-Price-Tracker-App
 //
-//  Created by Amal on 28/02/2026.
+//  Created by Afzal on 28/02/2026.
 //
 
 import SwiftUI
