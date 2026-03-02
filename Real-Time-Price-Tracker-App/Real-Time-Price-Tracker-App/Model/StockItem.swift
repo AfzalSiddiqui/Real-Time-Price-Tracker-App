@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import SwiftUI
 
 struct StockItem: Identifiable, Equatable {
     let id: String          // ticker e.g. "AAPL"
@@ -14,7 +15,6 @@ struct StockItem: Identifiable, Equatable {
     var price: Double
     var previousPrice: Double
 
-    // compares current vs old price
     var priceDirection: PriceDirection {
         if price > previousPrice { return .up }
         if price < previousPrice { return .down }
@@ -24,13 +24,28 @@ struct StockItem: Identifiable, Equatable {
 
 enum PriceDirection {
     case up, down, unchanged
+
+    var arrowName: String {
+        switch self {
+        case .up: return "arrow.up"
+        case .down: return "arrow.down"
+        case .unchanged: return "minus"
+        }
+    }
+
+    var color: Color {
+        switch self {
+        case .up: return .green
+        case .down: return .red
+        case .unchanged: return .gray
+        }
+    }
 }
 
 enum ConnectionStatus: Equatable {
     case connected, disconnected, connecting
 }
 
-// used for encoding/decoding WebSocket JSON payload
 struct PriceUpdate: Codable, Equatable {
     let symbol: String
     let price: Double
@@ -42,55 +57,55 @@ struct PriceUpdate: Codable, Equatable {
 enum StockCatalog {
     static let symbols: [(symbol: String, name: String, description: String)] = [
         ("AAPL", "Apple Inc.",
-         "Apple designs, manufactures, and markets smartphones, personal computers, tablets, wearables, and accessories. The company also offers digital content, streaming, and cloud services."),
+         "Consumer electronics and software. Known for iPhone, Mac, iPad, and services like iCloud and Apple Music."),
         ("GOOG", "Alphabet Inc.",
-         "Alphabet is the parent company of Google, specializing in internet services including search, advertising, cloud computing, and hardware products."),
+         "Parent company of Google. Runs search, YouTube, Android, and Google Cloud."),
         ("TSLA", "Tesla Inc.",
-         "Tesla designs, develops, manufactures, and sells electric vehicles, energy storage systems, and solar energy generation products worldwide."),
+         "Electric vehicle maker that also does energy storage and solar panels."),
         ("AMZN", "Amazon.com Inc.",
-         "Amazon is a multinational technology company focused on e-commerce, cloud computing (AWS), digital streaming, and artificial intelligence."),
+         "Started as an online bookstore, now runs the biggest cloud platform (AWS) alongside its e-commerce and streaming businesses."),
         ("MSFT", "Microsoft Corp.",
-         "Microsoft develops and supports software, services, devices, and solutions including Windows, Office, Azure, and gaming products."),
+         "Makes Windows, Office 365, Azure, Xbox, and LinkedIn. One of the largest companies by market cap."),
         ("NVDA", "NVIDIA Corp.",
-         "NVIDIA designs GPUs and system-on-chip units for gaming, professional visualization, data centers, and automotive markets. A leader in AI computing."),
+         "GPU maker that became the backbone of AI computing. Also big in gaming and data center hardware."),
         ("META", "Meta Platforms Inc.",
-         "Meta operates social media platforms including Facebook, Instagram, and WhatsApp, and is investing in virtual and augmented reality technologies."),
+         "Runs Facebook, Instagram, and WhatsApp. Spending heavily on VR/AR under the Meta rebrand."),
         ("NFLX", "Netflix Inc.",
-         "Netflix is a streaming entertainment service offering TV series, documentaries, feature films, and mobile games across a wide variety of genres and languages."),
+         "Streaming giant with a huge original content library. Available in pretty much every country."),
         ("AMD", "Advanced Micro Devices",
-         "AMD designs and produces microprocessors, GPUs, and related technologies for computing, gaming, and enterprise markets."),
+         "CPUs and GPUs competing with Intel and NVIDIA. Popular in gaming PCs and servers."),
         ("INTC", "Intel Corp.",
-         "Intel designs and manufactures essential computing technologies including microprocessors, chipsets, and integrated circuits for data centers and PCs."),
+         "Legacy chip company making processors for PCs and data centers. Trying to get back into the foundry business."),
         ("CRM", "Salesforce Inc.",
-         "Salesforce provides cloud-based customer relationship management (CRM) software and enterprise applications focused on sales, service, and marketing."),
+         "Cloud CRM platform — basically invented SaaS. Keeps growing through acquisitions like Slack and Tableau."),
         ("ORCL", "Oracle Corp.",
-         "Oracle provides cloud infrastructure, database technologies, and enterprise software applications for businesses of all sizes worldwide."),
+         "Enterprise databases and cloud infra. Been around since the 80s, now pushing hard into cloud services."),
         ("ADBE", "Adobe Inc.",
-         "Adobe offers creative, document, and digital experience solutions including Photoshop, Illustrator, Acrobat, and the Experience Cloud platform."),
+         "Creative software — Photoshop, Illustrator, Premiere Pro. Also has a digital experience platform for marketers."),
         ("PYPL", "PayPal Holdings Inc.",
-         "PayPal operates a digital payments platform that enables consumers and merchants to send and receive payments online and in stores."),
+         "Online payments platform for sending money, paying merchants, and handling transactions. Used by millions of sellers."),
         ("SQ", "Block Inc.",
-         "Block (formerly Square) provides financial services and mobile payment solutions for businesses and individuals through its ecosystem of tools."),
+         "Formerly Square. Makes the Square payment terminals and runs Cash App for peer-to-peer payments."),
         ("SHOP", "Shopify Inc.",
-         "Shopify provides a commerce platform enabling merchants to set up online stores, manage sales, marketing, shipping, and payments."),
+         "E-commerce platform for small and mid-size businesses. Handles storefronts, payments, and shipping in one place."),
         ("UBER", "Uber Technologies Inc.",
-         "Uber operates a platform connecting riders with drivers, and eaters with restaurants, offering ride-sharing, food delivery, and freight services."),
+         "Ride-hailing and food delivery (Uber Eats). Also getting into freight logistics."),
         ("LYFT", "Lyft Inc.",
-         "Lyft operates a peer-to-peer ride-sharing platform in the United States and Canada, offering rides, bikes, and scooters."),
+         "Ride-sharing company focused on the US and Canada. Competes head-to-head with Uber."),
         ("SNAP", "Snap Inc.",
-         "Snap operates Snapchat, a visual messaging app, and develops camera and social media products focused on augmented reality experiences."),
+         "Makes Snapchat — big on AR filters and disappearing messages. Mainly popular with younger demographics."),
         ("PINS", "Pinterest Inc.",
-         "Pinterest is a visual discovery engine that helps users find inspiration for recipes, home, style, and other interests through image sharing and bookmarking."),
+         "Visual discovery platform where people save ideas for recipes, home decor, fashion, and DIY projects."),
         ("TWTR", "Twitter / X Corp.",
-         "X (formerly Twitter) is a social media platform for public conversations, news sharing, and real-time communication through short-form messages."),
+         "Social platform rebranded to X. Known for real-time news, short posts, and public conversations."),
         ("COIN", "Coinbase Global Inc.",
-         "Coinbase is a cryptocurrency exchange platform that allows users to buy, sell, transfer, and store digital currencies securely."),
+         "Biggest US crypto exchange. Buy, sell, and store Bitcoin, Ethereum, and a bunch of other tokens."),
         ("HOOD", "Robinhood Markets Inc.",
-         "Robinhood provides commission-free trading of stocks, ETFs, options, and cryptocurrencies through its mobile-first financial services platform."),
+         "Commission-free trading app that got popular with retail investors during the meme stock era."),
         ("PLTR", "Palantir Technologies",
-         "Palantir builds software platforms for data integration and analytics, serving government agencies and commercial enterprises worldwide."),
+         "Data analytics for government and enterprise. Known for big contracts with defense and intelligence agencies."),
         ("RBLX", "Roblox Corp.",
-         "Roblox operates an online entertainment platform where users can create, share, and play immersive 3D experiences built by its community of developers.")
+         "Online gaming platform where users build and play each other's games. Massive with kids and teens.")
     ]
 
     static func initialStocks() -> [StockItem] {

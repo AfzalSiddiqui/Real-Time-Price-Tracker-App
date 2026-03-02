@@ -1,41 +1,62 @@
-# Real-Time-Price-Tracker-App
-Real-Time Price Tracker App
+# Real-Time Price Tracker App
 
-A clean iOS app that shows live stock prices — built with **SwiftUI**.
+SwiftUI app that tracks live stock prices for 25 symbols using a WebSocket echo server. Prices update every 2 seconds with visual indicators for price movement.
 
-Right now it displays a list of 25 popular stock symbols with placeholder prices. The plan is to bring in real-time WebSocket updates so prices actually move.
+## Overview
 
-## Current state
+The app connects to `wss://ws.postman-echo.com/raw` and simulates a real-time price feed. Every 2 seconds it generates random price updates for each symbol, sends them to the echo server, and uses the response to update the UI. The list stays sorted by price (highest first) and re-sorts automatically on every update.
 
-- Project set up with **SwiftUI**
-- Classic MVVM folder structure  
-  (`Models` • `Views` • `ViewModels` • `Services`)
-- Main **Feed screen**:
-  - Scrollable list of 25 symbols
-  - Each row shows symbol + placeholder price
-  - Tap row → detail screen
-- **Symbol detail screen**:
-  - Symbol name as title
-  - Large price placeholder
-  - Space prepared for description / company info
-- Smooth navigation using **NavigationStack**
-- Basic ViewModels with `@Published` properties already wired up
+There are two screens — a feed screen showing all 25 stocks, and a detail screen you get to by tapping any row. Both screens stay in sync since they share the same ViewModel, so there's only one WebSocket connection running at a time.
 
-Static version looks good — now ready for live data.
+## Screens
 
-## Next steps
+**Feed Screen**
+- Scrollable list with symbol name, current price, and green ↑ / red ↓ arrows
+- Top bar has a connection status dot on the left (green/red/orange) and a Start/Stop button on the right
+- Rows briefly flash green or red when the price changes
+- Shows a toast when connection status changes (connected, disconnected, connecting)
 
-- Connect real **WebSocket** for live price streaming
-- Show price changes with green ↑ / red ↓ indicators
-- Option to sort list by price or % change
-- Add **Start / Stop** feed toggle + connection status
-- Pull in real company names + short descriptions
-- Small UI polish (colors, spacing, typography)
+**Detail Screen**
+- Symbol name in the navigation bar
+- Large price display with direction indicator
+- Company description in a grouped box
 
-## Quick note
+## Architecture
 
-This commit is the solid foundation: structure, navigation, static feed of 25 symbols, basic MVVM setup.
+MVVM — the ViewModel (`PriceTrackerViewModel`) is created as a `@StateObject` at the app level and passed down via `@EnvironmentObject`. It owns the `WebSocketService` and binds to the views through `@Published` properties.
 
-Live prices and the fun part start in the next commits.
+The WebSocket layer uses `URLSessionWebSocketTask` with a delegate for lifecycle callbacks. Price data comes back through Combine (`$priceUpdates` sink), the ViewModel applies the updates, re-sorts the list, and SwiftUI handles the rest. Navigation is a `NavigationStack` with value-based routing, and deep links (`stocks://symbol/AAPL`) go through `.onOpenURL`.
 
-Thanks for checking it out!
+## Running the App
+
+1. Open `Real-Time-Price-Tracker-App.xcodeproj` in Xcode 26+
+2. Pick an iOS 26 simulator
+3. Cmd+R to build and run
+4. Hit **Start** to kick off the price feed
+
+To test deep links:
+```
+xcrun simctl openurl booted "stocks://symbol/AAPL"
+```
+
+## Project Structure
+
+```
+Real-Time-Price-Tracker-App/
+├── Model/
+│   └── StockItem.swift
+├── ViewModels/
+│   └── PriceTrackerViewModel.swift
+├── Views/
+│   ├── FeedView.swift
+│   ├── StockItemListView.swift
+│   ├── SymbolDetailView.swift
+│   └── SplashScreenView.swift
+├── Services/
+│   └── WebSocketService.swift
+├── Utilities/
+│   └── Constants.swift
+├── ContentView.swift
+├── Real_Time_Price_Tracker_AppApp.swift
+└── Info.plist
+```

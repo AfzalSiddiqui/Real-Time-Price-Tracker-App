@@ -7,7 +7,7 @@
 
 import Foundation
 
-/// Centralised app-wide constants
+// App-wide constants
 enum Constants {
 
     enum App {

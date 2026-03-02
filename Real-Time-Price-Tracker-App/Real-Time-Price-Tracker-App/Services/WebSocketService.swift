@@ -8,7 +8,6 @@
 import Foundation
 import Combine
 
-// Handles WebSocket connection to the echo server + timer-driven price simulation
 final class WebSocketService: NSObject, ObservableObject, @unchecked Sendable {
 
     @Published var status: ConnectionStatus = .disconnected
