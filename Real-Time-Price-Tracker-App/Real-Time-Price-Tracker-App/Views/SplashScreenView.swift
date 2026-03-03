@@ -17,7 +17,7 @@ struct SplashScreenView: View {
             splashContent
                 .onAppear {
                     // brief delay then transition to main content
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + Constants.App.splashDelay) {
                         withAnimation { isActive = true }
                     }
                 }

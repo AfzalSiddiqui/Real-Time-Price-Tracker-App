@@ -68,7 +68,7 @@ class PriceTrackerViewModel: ObservableObject {
             self?.highlightedSymbols = []
         }
         flashWork = work
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0, execute: work)
+        DispatchQueue.main.asyncAfter(deadline: .now() + Constants.Animation.flashDuration, execute: work)
     }
 
     func toggleFeed() {
@@ -82,8 +82,8 @@ class PriceTrackerViewModel: ObservableObject {
 
     // expected format: stocks://symbol/AAPL
     func handleDeepLink(_ url: URL) {
-        guard url.scheme == "stocks",
-              url.host == "symbol",
+        guard url.scheme == Constants.DeepLink.scheme,
+              url.host == Constants.DeepLink.host,
               let ticker = url.pathComponents.dropFirst().first,
               stock(for: ticker) != nil else { return }
 

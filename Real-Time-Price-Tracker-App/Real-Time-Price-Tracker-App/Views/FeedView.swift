@@ -72,9 +72,9 @@ struct FeedView: View {
         toastWork?.cancel()
 
         switch status {
-        case .connected:  toastMessage = "Connected"
-        case .disconnected: toastMessage = "Disconnected"
-        case .connecting: toastMessage = "Connecting..."
+        case .connected:  toastMessage = Constants.Connection.connectedText
+        case .disconnected: toastMessage = Constants.Connection.disconnectedText
+        case .connecting: toastMessage = Constants.Connection.connectingText
         }
 
         withAnimation { showToast = true }
@@ -83,6 +83,6 @@ struct FeedView: View {
             withAnimation { showToast = false }
         }
         toastWork = work
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2, execute: work)
+        DispatchQueue.main.asyncAfter(deadline: .now() + Constants.Animation.toastDuration, execute: work)
     }
 }

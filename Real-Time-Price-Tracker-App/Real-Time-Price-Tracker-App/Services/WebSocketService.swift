@@ -19,9 +19,9 @@ final class WebSocketService: NSObject, ObservableObject, @unchecked Sendable {
     private let tickers: [String]
     private var cachedPrices: [String: Double] = [:]
 
-    private let serverURL = "wss://ws.postman-echo.com/raw"
-    private let interval: TimeInterval = 2.0
-    private let fluctuation = 0.95...1.05   // +/- 5%
+    private let serverURL = Constants.WebSocket.serverURL
+    private let interval = Constants.WebSocket.sendInterval
+    private let fluctuation = Constants.WebSocket.fluctuation
 
     init(tickers: [String] = StockCatalog.symbols.map { $0.symbol }) {
         self.tickers = tickers
