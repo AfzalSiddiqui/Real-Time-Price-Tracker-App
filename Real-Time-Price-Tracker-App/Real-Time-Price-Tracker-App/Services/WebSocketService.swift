@@ -8,6 +8,13 @@
 import Foundation
 import Combine
 
+protocol PriceFeedProvider: AnyObject {
+    var statusPublisher: AnyPublisher<ConnectionStatus, Never> { get }
+    var pricePublisher: AnyPublisher<[PriceUpdate], Never> { get }
+    func connect()
+    func disconnect()
+}
+
 final class WebSocketService: NSObject, ObservableObject, @unchecked Sendable {
 
     @Published var status: ConnectionStatus = .disconnected
@@ -89,6 +96,15 @@ final class WebSocketService: NSObject, ObservableObject, @unchecked Sendable {
                 break
             }
         }
+    }
+}
+
+extension WebSocketService: PriceFeedProvider {
+    var statusPublisher: AnyPublisher<ConnectionStatus, Never> {
+        $status.eraseToAnyPublisher()
+    }
+    var pricePublisher: AnyPublisher<[PriceUpdate], Never> {
+        $priceUpdates.eraseToAnyPublisher()
     }
 }
 
