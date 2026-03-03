@@ -17,12 +17,12 @@ class PriceTrackerViewModel: ObservableObject {
     @Published var highlightedSymbols: Set<String> = []
     @Published var navPath = NavigationPath()
 
-    private let wsService: WebSocketService
+    private let feedService: any PriceFeedProvider
     private var subs = Set<AnyCancellable>()
-    private var flashWork: DispatchWorkItem?
+    private var flashSub: AnyCancellable?
 
-    init(wsService: WebSocketService = WebSocketService()) {
-        self.wsService = wsService
+    init(feedService: any PriceFeedProvider = WebSocketService()) {
+        self.feedService = feedService
         setupStocks()
         setupBindings()
     }
@@ -34,11 +34,11 @@ class PriceTrackerViewModel: ObservableObject {
     // MARK: - Combine
 
     private func setupBindings() {
-        wsService.$status
+        feedService.statusPublisher
             .receive(on: DispatchQueue.main)
             .assign(to: &$connectionStatus)
 
-        wsService.$priceUpdates
+        feedService.pricePublisher
             .receive(on: DispatchQueue.main)
             .sink { [weak self] data in self?.handlePriceData(data) }
             .store(in: &subs)
@@ -60,19 +60,16 @@ class PriceTrackerViewModel: ObservableObject {
 
         list.sort { $0.price > $1.price }
         stocks = list
-        // cancel previous flash timer if still running
-        flashWork?.cancel()
+        flashSub?.cancel()
         highlightedSymbols = changed
 
-        let work = DispatchWorkItem { [weak self] in
-            self?.highlightedSymbols = []
-        }
-        flashWork = work
-        DispatchQueue.main.asyncAfter(deadline: .now() + Constants.Animation.flashDuration, execute: work)
+        flashSub = Just(())
+            .delay(for: .seconds(Constants.Animation.flashDuration), scheduler: DispatchQueue.main)
+            .sink { [weak self] _ in self?.highlightedSymbols = [] }
     }
 
     func toggleFeed() {
-        isFeedActive ? wsService.disconnect() : wsService.connect()
+        isFeedActive ? feedService.disconnect() : feedService.connect()
         isFeedActive.toggle()
     }
 
