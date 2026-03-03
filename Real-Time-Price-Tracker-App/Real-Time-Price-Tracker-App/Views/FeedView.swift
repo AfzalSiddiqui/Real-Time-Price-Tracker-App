@@ -9,18 +9,37 @@ import SwiftUI
 
 struct FeedView: View {
     @EnvironmentObject var vm: PriceTrackerViewModel
+    @State private var toastMessage: String?
+    @State private var showToast = false
+    @State private var toastWork: DispatchWorkItem?
 
     var body: some View {
-        List(vm.stocks) { stock in
-            NavigationLink(value: stock.id) {
-                StockItemListView(
-                    stock: stock,
-                    isFlashing: vm.highlightedSymbols.contains(stock.id)
-                )
+        ZStack(alignment: .top) {
+            List(vm.stocks) { stock in
+                NavigationLink(value: stock.id) {
+                    StockItemListView(
+                        stock: stock,
+                        isFlashing: vm.highlightedSymbols.contains(stock.id)
+                    )
+                }
+            }
+            .listStyle(.plain)
+
+            // toast near toolbar
+            if showToast, let msg = toastMessage {
+                Text(msg)
+                    .font(.subheadline.weight(.medium))
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 10)
+                    .background(.ultraThinMaterial, in: Capsule())
+                    .shadow(radius: 4)
+                    .padding(.top, 8)
+                    .transition(.move(edge: .top).combined(with: .opacity))
             }
         }
-        .listStyle(.plain)
+        .animation(.easeInOut(duration: 0.3), value: showToast)
         .navigationTitle(Constants.App.title)
+        .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .topBarLeading) {
                 Circle()
@@ -34,6 +53,9 @@ struct FeedView: View {
                 .fontWeight(.semibold)
             }
         }
+        .onChange(of: vm.connectionStatus) { _, newStatus in
+            showStatusToast(newStatus)
+        }
     }
 
     // green = connected, red = offline, orange = in progress
@@ -43,5 +65,24 @@ struct FeedView: View {
         case .disconnected: return .red
         case .connecting: return .orange
         }
+    }
+
+    private func showStatusToast(_ status: ConnectionStatus) {
+        // cancel previous hide timer if still pending
+        toastWork?.cancel()
+
+        switch status {
+        case .connected:  toastMessage = "Connected"
+        case .disconnected: toastMessage = "Disconnected"
+        case .connecting: toastMessage = "Connecting..."
+        }
+
+        withAnimation { showToast = true }
+
+        let work = DispatchWorkItem {
+            withAnimation { showToast = false }
+        }
+        toastWork = work
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2, execute: work)
     }
 }

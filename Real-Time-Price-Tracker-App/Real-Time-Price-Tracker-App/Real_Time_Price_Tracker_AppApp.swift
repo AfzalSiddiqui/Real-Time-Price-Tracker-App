@@ -15,6 +15,9 @@ struct Real_Time_Price_Tracker_AppApp: App {
         WindowGroup {
             SplashScreenView()
                 .environmentObject(viewModel)
+                .onOpenURL { url in
+                    viewModel.handleDeepLink(url)
+                }
         }
     }
 }

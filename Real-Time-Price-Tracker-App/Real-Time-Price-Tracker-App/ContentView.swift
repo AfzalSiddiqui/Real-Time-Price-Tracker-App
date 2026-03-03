@@ -8,10 +8,10 @@
 import SwiftUI
 
 struct ContentView: View {
-    @EnvironmentObject var viewModel: PriceTrackerViewModel
+    @EnvironmentObject var vm: PriceTrackerViewModel
 
     var body: some View {
-        NavigationStack {
+        NavigationStack(path: $vm.navPath) {
             FeedView()
                 .navigationDestination(for: String.self) { symbol in
                     SymbolDetailView(symbol: symbol)

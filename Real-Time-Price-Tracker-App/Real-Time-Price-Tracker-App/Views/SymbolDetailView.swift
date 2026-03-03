@@ -41,19 +41,22 @@ struct SymbolDetailView: View {
     }
 
     private func priceDisplay(_ stock: StockItem) -> some View {
-        VStack(spacing: 8) {
+        let direction = stock.priceDirection
+
+        return VStack(spacing: 8) {
             Text(stock.price, format: .currency(code: Constants.App.currencyCode))
-                .font(.system(size: 48, weight: .bold, design: .rounded))
+                .font(.system(size: 28, weight: .bold, design: .rounded))
                 .monospacedDigit()
-                .foregroundStyle(isFlashing ? tintColor(stock) : .primary)
+                .foregroundStyle(isFlashing ? direction.color : .primary)
                 .animation(.easeInOut(duration: 0.3), value: isFlashing)
 
-            HStack(spacing: 6) {
-                Image(systemName: changeIcon(stock))
-                Text(changeLabel(stock))
+            HStack(spacing: 5) {
+                Image(systemName: direction.arrowName)
+                    .font(.system(size: 15))
+                Text(directionLabel(direction))
+                    .font(.system(size: 16, weight: .medium))
             }
-            .font(.title3)
-            .foregroundStyle(tintColor(stock))
+            .foregroundStyle(direction.color)
         }
         .padding(.top, 32)
     }
@@ -61,37 +64,21 @@ struct SymbolDetailView: View {
     private func aboutSection(_ stock: StockItem) -> some View {
         GroupBox {
             Text(stock.description)
-                .font(.body)
+                .font(.system(size: 14))
+                .lineSpacing(3)
                 .frame(maxWidth: .infinity, alignment: .leading)
         } label: {
             Label("About \(stock.name)", systemImage: "info.circle")
+                .font(.system(size: 14, weight: .medium))
         }
         .padding(.horizontal)
     }
 
-    // MARK: - Helpers
-
-    private func changeIcon(_ stock: StockItem) -> String {
-        switch stock.priceDirection {
-        case .up: return "arrow.up"
-        case .down: return "arrow.down"
-        case .unchanged: return "minus"
-        }
-    }
-
-    private func changeLabel(_ stock: StockItem) -> String {
-        switch stock.priceDirection {
+    private func directionLabel(_ dir: PriceDirection) -> String {
+        switch dir {
         case .up: return Constants.Detail.risingText
         case .down: return Constants.Detail.fallingText
         case .unchanged: return Constants.Detail.stableText
-        }
-    }
-
-    private func tintColor(_ stock: StockItem) -> Color {
-        switch stock.priceDirection {
-        case .up: return .green
-        case .down: return .red
-        case .unchanged: return .gray
         }
     }
 }

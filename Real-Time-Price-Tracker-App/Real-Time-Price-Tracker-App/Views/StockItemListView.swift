@@ -23,49 +23,28 @@ struct StockItemListView: View {
     }
 
     private var tickerLabel: some View {
-        VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: 3) {
             Text(stock.id)
-                .font(.headline)
+                .font(.system(size: 16, weight: .semibold))
             Text(stock.name)
-                .font(.caption)
+                .font(.system(size: 13))
                 .foregroundStyle(.secondary)
         }
     }
 
     private var priceLabel: some View {
-        HStack(spacing: 4) {
+        HStack(spacing: 5) {
             Text(stock.price, format: .currency(code: Constants.App.currencyCode))
-                .font(.body.monospacedDigit())
-                .fontWeight(.medium)
-            Image(systemName: changeIcon)
-                .foregroundStyle(changeColor)
-                .font(.caption)
+                .font(.system(size: 15, weight: .medium).monospacedDigit())
+            Image(systemName: stock.priceDirection.arrowName)
+                .foregroundStyle(stock.priceDirection.color)
+                .font(.system(size: 11))
         }
     }
 
     // brief highlight on price change
     private var rowHighlight: Color? {
-        guard isFlashing else { return nil }
-        switch stock.priceDirection {
-        case .up: return .green.opacity(0.15)
-        case .down: return .red.opacity(0.15)
-        case .unchanged: return nil
-        }
-    }
-
-    private var changeIcon: String {
-        switch stock.priceDirection {
-        case .up: return "arrow.up"
-        case .down: return "arrow.down"
-        case .unchanged: return "minus"
-        }
-    }
-
-    private var changeColor: Color {
-        switch stock.priceDirection {
-        case .up: return .green
-        case .down: return .red
-        case .unchanged: return .gray
-        }
+        guard isFlashing, stock.priceDirection != .unchanged else { return nil }
+        return stock.priceDirection.color.opacity(0.15)
     }
 }

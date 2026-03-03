@@ -15,9 +15,11 @@ class PriceTrackerViewModel: ObservableObject {
     @Published var connectionStatus: ConnectionStatus = .disconnected
     @Published var isFeedActive = false
     @Published var highlightedSymbols: Set<String> = []
+    @Published var navPath = NavigationPath()
 
     private let wsService: WebSocketService
     private var subs = Set<AnyCancellable>()
+    private var flashWork: DispatchWorkItem?
 
     init(wsService: WebSocketService = WebSocketService()) {
         self.wsService = wsService
@@ -32,12 +34,10 @@ class PriceTrackerViewModel: ObservableObject {
     // MARK: - Combine
 
     private func setupBindings() {
-        // mirror connection status from service
         wsService.$status
             .receive(on: DispatchQueue.main)
             .assign(to: &$connectionStatus)
 
-        // react to price updates echoed back from server
         wsService.$priceUpdates
             .receive(on: DispatchQueue.main)
             .sink { [weak self] data in self?.handlePriceData(data) }
@@ -60,15 +60,16 @@ class PriceTrackerViewModel: ObservableObject {
 
         list.sort { $0.price > $1.price }
         stocks = list
+        // cancel previous flash timer if still running
+        flashWork?.cancel()
         highlightedSymbols = changed
 
-        // remove highlight after 1s
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
+        let work = DispatchWorkItem { [weak self] in
             self?.highlightedSymbols = []
         }
+        flashWork = work
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0, execute: work)
     }
-
-    // MARK: - Actions
 
     func toggleFeed() {
         isFeedActive ? wsService.disconnect() : wsService.connect()
@@ -77,5 +78,16 @@ class PriceTrackerViewModel: ObservableObject {
 
     func stock(for symbol: String) -> StockItem? {
         stocks.first { $0.id == symbol }
+    }
+
+    // expected format: stocks://symbol/AAPL
+    func handleDeepLink(_ url: URL) {
+        guard url.scheme == "stocks",
+              url.host == "symbol",
+              let ticker = url.pathComponents.dropFirst().first,
+              stock(for: ticker) != nil else { return }
+
+        navPath = NavigationPath()
+        navPath.append(ticker)
     }
 }
