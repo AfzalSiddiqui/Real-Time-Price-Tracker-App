@@ -49,9 +49,10 @@ class PriceTrackerViewModel: ObservableObject {
 
         var list = stocks
         var changed = Set<String>()
+        let indexMap = Dictionary(uniqueKeysWithValues: list.indices.map { (list[$0].id, $0) })
 
         for update in incoming {
-            guard let i = list.firstIndex(where: { $0.id == update.symbol }) else { continue }
+            guard let i = indexMap[update.symbol] else { continue }
             let old = list[i].price
             list[i].previousPrice = old
             list[i].price = update.price
