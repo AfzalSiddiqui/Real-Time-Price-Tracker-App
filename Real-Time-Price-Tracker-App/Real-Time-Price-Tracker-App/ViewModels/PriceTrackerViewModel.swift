@@ -19,7 +19,7 @@ class PriceTrackerViewModel: ObservableObject {
 
     private let feedService: any PriceFeedProvider
     private var subs = Set<AnyCancellable>()
-    private var flashSub: AnyCancellable?
+    private var flashWork: DispatchWorkItem?
 
     init(feedService: any PriceFeedProvider = WebSocketService()) {
         self.feedService = feedService
@@ -52,21 +52,23 @@ class PriceTrackerViewModel: ObservableObject {
         let indexMap = Dictionary(uniqueKeysWithValues: list.indices.map { (list[$0].id, $0) })
 
         for update in incoming {
-            guard let i = indexMap[update.symbol] else { continue }
-            let old = list[i].price
-            list[i].previousPrice = old
+            guard let i = indexMap[update.symbol],
+                  list[i].price != update.price else { continue }
+            list[i].previousPrice = list[i].price
             list[i].price = update.price
-            if old != update.price { changed.insert(update.symbol) }
+            changed.insert(update.symbol)
         }
+
+        guard !changed.isEmpty else { return }
 
         list.sort { $0.price > $1.price }
         stocks = list
-        flashSub?.cancel()
-        highlightedSymbols = changed
 
-        flashSub = Just(())
-            .delay(for: .seconds(Constants.Animation.flashDuration), scheduler: DispatchQueue.main)
-            .sink { [weak self] _ in self?.highlightedSymbols = [] }
+        flashWork?.cancel()
+        highlightedSymbols = changed
+        let work = DispatchWorkItem { [weak self] in self?.highlightedSymbols = [] }
+        flashWork = work
+        DispatchQueue.main.asyncAfter(deadline: .now() + Constants.Animation.flashDuration, execute: work)
     }
 
     func toggleFeed() {
