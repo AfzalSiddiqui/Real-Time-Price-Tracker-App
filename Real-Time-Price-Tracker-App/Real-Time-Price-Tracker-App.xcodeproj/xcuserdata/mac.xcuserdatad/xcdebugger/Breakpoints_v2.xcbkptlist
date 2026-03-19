@@ -66,36 +66,6 @@
             endingLineNumber = "83"
             landmarkName = "showStatusToast(_:)"
             landmarkType = "7">
-            <Locations>
-               <Location
-                  uuid = "C29352A1-A7B7-48E6-8D8B-6CBA738F6127 - e726a3867e9aa939"
-                  shouldBeEnabled = "Yes"
-                  ignoreCount = "0"
-                  continueAfterRunningActions = "No"
-                  symbolName = "closure #2 () -&gt; () in Real_Time_Price_Tracker_App.FeedView.showStatusToast(Real_Time_Price_Tracker_App.ConnectionStatus) -&gt; ()"
-                  moduleName = "Real-Time-Price-Tracker-App.debug.dylib"
-                  usesParentBreakpointCondition = "Yes"
-                  urlString = "file:///Users/mac/Desktop/Challenge/Real-Time-Price-Tracker-App/Real-Time-Price-Tracker-App/Real-Time-Price-Tracker-App/Views/FeedView.swift"
-                  startingColumnNumber = "9223372036854775807"
-                  endingColumnNumber = "9223372036854775807"
-                  startingLineNumber = "83"
-                  endingLineNumber = "83">
-               </Location>
-               <Location
-                  uuid = "C29352A1-A7B7-48E6-8D8B-6CBA738F6127 - 87e6de19df8b5424"
-                  shouldBeEnabled = "Yes"
-                  ignoreCount = "0"
-                  continueAfterRunningActions = "No"
-                  symbolName = "closure #1 () -&gt; () in closure #2 () -&gt; () in Real_Time_Price_Tracker_App.FeedView.showStatusToast(Real_Time_Price_Tracker_App.ConnectionStatus) -&gt; ()"
-                  moduleName = "Real-Time-Price-Tracker-App.debug.dylib"
-                  usesParentBreakpointCondition = "Yes"
-                  urlString = "file:///Users/mac/Desktop/Challenge/Real-Time-Price-Tracker-App/Real-Time-Price-Tracker-App/Real-Time-Price-Tracker-App/Views/FeedView.swift"
-                  startingColumnNumber = "9223372036854775807"
-                  endingColumnNumber = "9223372036854775807"
-                  startingLineNumber = "83"
-                  endingLineNumber = "83">
-               </Location>
-            </Locations>
          </BreakpointContent>
       </BreakpointProxy>
       <BreakpointProxy

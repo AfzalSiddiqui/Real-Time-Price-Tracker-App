@@ -9,12 +9,12 @@ import SwiftUI
 
 @main
 struct Real_Time_Price_Tracker_AppApp: App {
-    @StateObject private var viewModel = PriceTrackerViewModel()
+    @State private var viewModel = PriceTrackerViewModel()
 
     var body: some Scene {
         WindowGroup {
             SplashScreenView()
-                .environmentObject(viewModel)
+                .environment(viewModel)
                 .onOpenURL { url in
                     viewModel.handleDeepLink(url)
                 }

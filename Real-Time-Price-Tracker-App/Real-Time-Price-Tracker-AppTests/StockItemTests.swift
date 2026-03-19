@@ -12,7 +12,7 @@ import Foundation
 struct StockItemTests {
 
     @Test func initSetsCorrectValues() {
-        let stock = StockItem(id: "AAPL", name: "Apple", description: "Tech company", price: 150.0, previousPrice: 140.0)
+        let stock = StockItem(id: "AAPL", name: "Apple", about: "Tech company", price: 150.0, previousPrice: 140.0)
 
         #expect(stock.id == "AAPL")
         #expect(stock.name == "Apple")
@@ -21,17 +21,17 @@ struct StockItemTests {
     }
 
     @Test func priceGoingUp() {
-        let stock = StockItem(id: "AAPL", name: "Apple", description: "", price: 160.0, previousPrice: 150.0)
+        let stock = StockItem(id: "AAPL", name: "Apple", about: "", price: 160.0, previousPrice: 150.0)
         #expect(stock.priceDirection == .up)
     }
 
     @Test func priceGoingDown() {
-        let stock = StockItem(id: "TSLA", name: "Tesla", description: "", price: 100.0, previousPrice: 200.0)
+        let stock = StockItem(id: "TSLA", name: "Tesla", about: "", price: 100.0, previousPrice: 200.0)
         #expect(stock.priceDirection == .down)
     }
 
     @Test func priceNotChanged() {
-        let stock = StockItem(id: "GOOG", name: "Google", description: "", price: 300.0, previousPrice: 300.0)
+        let stock = StockItem(id: "GOOG", name: "Google", about: "", price: 300.0, previousPrice: 300.0)
         #expect(stock.priceDirection == .unchanged)
     }
 

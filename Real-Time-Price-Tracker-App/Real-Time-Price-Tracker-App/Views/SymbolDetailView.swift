@@ -8,7 +8,7 @@
 import SwiftUI
 
 struct SymbolDetailView: View {
-    @EnvironmentObject var vm: PriceTrackerViewModel
+    @Environment(PriceTrackerViewModel.self) var vm
     let symbol: String
 
     private var stock: StockItem? { vm.stock(for: symbol) }
@@ -63,7 +63,7 @@ struct SymbolDetailView: View {
 
     private func aboutSection(_ stock: StockItem) -> some View {
         GroupBox {
-            Text(stock.description)
+            Text(stock.about)
                 .font(.system(size: 14))
                 .lineSpacing(3)
                 .frame(maxWidth: .infinity, alignment: .leading)

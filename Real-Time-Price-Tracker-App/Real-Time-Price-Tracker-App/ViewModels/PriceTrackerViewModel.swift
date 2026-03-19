@@ -6,42 +6,56 @@
 //
 
 import Foundation
-import Combine
 import SwiftUI
 
-class PriceTrackerViewModel: ObservableObject {
+@Observable
+@MainActor
+class PriceTrackerViewModel {
 
-    @Published var stocks: [StockItem] = []
-    @Published var connectionStatus: ConnectionStatus = .disconnected
-    @Published var isFeedActive = false
-    @Published var highlightedSymbols: Set<String> = []
-    @Published var navPath = NavigationPath()
+    var stocks: [StockItem] = []
+    var connectionStatus: ConnectionStatus = .disconnected
+    var isFeedActive = false
+    var highlightedSymbols: Set<String> = []
+    var navPath = NavigationPath()
 
-    private let feedService: any PriceFeedProvider
-    private var subs = Set<AnyCancellable>()
-    private var flashWork: DispatchWorkItem?
+    @ObservationIgnored private let feedService: any PriceFeedProvider
+    @ObservationIgnored private var statusTask: Task<Void, Never>?
+    @ObservationIgnored private var priceTask: Task<Void, Never>?
+    @ObservationIgnored private var flashTask: Task<Void, Never>?
+    @ObservationIgnored private var stockIndex: [String: Int] = [:]
 
     init(feedService: any PriceFeedProvider = WebSocketService()) {
         self.feedService = feedService
-        setupStocks()
-        setupBindings()
-    }
-
-    private func setupStocks() {
         stocks = StockCatalog.initialStocks().sorted { $0.price > $1.price }
+        rebuildIndex()
+        startObserving()
     }
 
-    // MARK: - Combine
+    deinit {
+        statusTask?.cancel()
+        priceTask?.cancel()
+        flashTask?.cancel()
+    }
 
-    private func setupBindings() {
-        feedService.statusPublisher
-            .receive(on: DispatchQueue.main)
-            .assign(to: &$connectionStatus)
+    // MARK: - Async Observation
 
-        feedService.pricePublisher
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] data in self?.handlePriceData(data) }
-            .store(in: &subs)
+    private func startObserving() {
+        statusTask = Task { [weak self] in
+            guard let stream = self?.feedService.statusStream else { return }
+            for await status in stream {
+                guard let self, !Task.isCancelled else { break }
+                self.connectionStatus = status
+                self.isFeedActive = (status == .connected)
+            }
+        }
+
+        priceTask = Task { [weak self] in
+            guard let stream = self?.feedService.priceStream else { return }
+            for await prices in stream {
+                guard let self, !Task.isCancelled else { break }
+                self.handlePriceData(prices)
+            }
+        }
     }
 
     private func handlePriceData(_ incoming: [PriceUpdate]) {
@@ -49,10 +63,9 @@ class PriceTrackerViewModel: ObservableObject {
 
         var list = stocks
         var changed = Set<String>()
-        let indexMap = Dictionary(uniqueKeysWithValues: list.indices.map { (list[$0].id, $0) })
 
         for update in incoming {
-            guard let i = indexMap[update.symbol],
+            guard let i = stockIndex[update.symbol],
                   list[i].price != update.price else { continue }
             list[i].previousPrice = list[i].price
             list[i].price = update.price
@@ -61,23 +74,38 @@ class PriceTrackerViewModel: ObservableObject {
 
         guard !changed.isEmpty else { return }
 
-        list.sort { $0.price > $1.price }
+        let needsSort = !isSorted(list)
+        if needsSort { list.sort { $0.price > $1.price } }
         stocks = list
+        if needsSort { rebuildIndex() }
 
-        flashWork?.cancel()
+        flashTask?.cancel()
         highlightedSymbols = changed
-        let work = DispatchWorkItem { [weak self] in self?.highlightedSymbols = [] }
-        flashWork = work
-        DispatchQueue.main.asyncAfter(deadline: .now() + Constants.Animation.flashDuration, execute: work)
+        flashTask = Task {
+            try? await Task.sleep(for: .seconds(Constants.Animation.flashDuration))
+            guard !Task.isCancelled else { return }
+            highlightedSymbols = []
+        }
     }
 
     func toggleFeed() {
         isFeedActive ? feedService.disconnect() : feedService.connect()
-        isFeedActive.toggle()
     }
 
     func stock(for symbol: String) -> StockItem? {
-        stocks.first { $0.id == symbol }
+        guard let i = stockIndex[symbol] else { return nil }
+        return stocks[i]
+    }
+
+    private func isSorted(_ list: [StockItem]) -> Bool {
+        for i in 1..<list.count where list[i - 1].price < list[i].price {
+            return false
+        }
+        return true
+    }
+
+    private func rebuildIndex() {
+        stockIndex = Dictionary(uniqueKeysWithValues: stocks.indices.map { (stocks[$0].id, $0) })
     }
 
     // expected format: stocks://symbol/AAPL

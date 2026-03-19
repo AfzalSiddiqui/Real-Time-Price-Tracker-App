@@ -8,10 +8,10 @@
 import SwiftUI
 
 struct FeedView: View {
-    @EnvironmentObject var vm: PriceTrackerViewModel
+    @Environment(PriceTrackerViewModel.self) var vm
     @State private var toastMessage: String?
     @State private var showToast = false
-    @State private var toastWork: DispatchWorkItem?
+    @State private var toastTask: Task<Void, Never>?
 
     var body: some View {
         ZStack(alignment: .top) {
@@ -68,8 +68,7 @@ struct FeedView: View {
     }
 
     private func showStatusToast(_ status: ConnectionStatus) {
-        // cancel previous hide timer if still pending
-        toastWork?.cancel()
+        toastTask?.cancel()
 
         switch status {
         case .connected:  toastMessage = Constants.Connection.connectedText
@@ -79,10 +78,10 @@ struct FeedView: View {
 
         withAnimation { showToast = true }
 
-        let work = DispatchWorkItem {
+        toastTask = Task {
+            try? await Task.sleep(for: .seconds(Constants.Animation.toastDuration))
+            guard !Task.isCancelled else { return }
             withAnimation { showToast = false }
         }
-        toastWork = work
-        DispatchQueue.main.asyncAfter(deadline: .now() + Constants.Animation.toastDuration, execute: work)
     }
 }

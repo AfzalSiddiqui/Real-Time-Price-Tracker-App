@@ -12,17 +12,15 @@ struct WebSocketServiceTests {
 
     @Test func startsDisconnected() {
         let svc = WebSocketService()
-        #expect(svc.status == .disconnected)
-        #expect(svc.priceUpdates.isEmpty)
+        #expect(svc.currentStatus == .disconnected)
     }
 
     @Test func catalogHas25Tickers() {
-        // tickers are private so just verify the source data
         #expect(StockCatalog.symbols.count == 25)
     }
 
     @Test func canInitWithCustomTickers() {
         let svc = WebSocketService(tickers: ["AAPL", "GOOG"])
-        #expect(svc.status == .disconnected)
+        #expect(svc.currentStatus == .disconnected)
     }
 }

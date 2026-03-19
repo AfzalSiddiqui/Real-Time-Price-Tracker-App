@@ -15,11 +15,9 @@ struct SplashScreenView: View {
             ContentView()
         } else {
             splashContent
-                .onAppear {
-                    // brief delay then transition to main content
-                    DispatchQueue.main.asyncAfter(deadline: .now() + Constants.App.splashDelay) {
-                        withAnimation { isActive = true }
-                    }
+                .task {
+                    try? await Task.sleep(for: .seconds(Constants.App.splashDelay))
+                    withAnimation { isActive = true }
                 }
         }
     }

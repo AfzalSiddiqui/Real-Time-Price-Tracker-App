@@ -6,125 +6,118 @@
 //
 
 import Foundation
-import Combine
 
-protocol PriceFeedProvider: AnyObject {
-    var statusPublisher: AnyPublisher<ConnectionStatus, Never> { get }
-    var pricePublisher: AnyPublisher<[PriceUpdate], Never> { get }
-    func connect()
-    func disconnect()
-}
+final class WebSocketService: PriceFeedProvider, @unchecked Sendable {
 
-final class WebSocketService: NSObject, ObservableObject, @unchecked Sendable {
+    let statusStream: AsyncStream<ConnectionStatus>
+    let priceStream: AsyncStream<[PriceUpdate]>
 
-    @Published var status: ConnectionStatus = .disconnected
-    @Published var priceUpdates: [PriceUpdate] = []
+    private(set) var currentStatus: ConnectionStatus = .disconnected
 
-    private var socketTask: URLSessionWebSocketTask?
-    private var session: URLSession!
-    private var timerSub: AnyCancellable?
+    private let statusContinuation: AsyncStream<ConnectionStatus>.Continuation
+    private let priceContinuation: AsyncStream<[PriceUpdate]>.Continuation
+
+    private var webSocketTask: URLSessionWebSocketTask?
+    private var session: URLSession?
+    private var feedLoop: Task<Void, Never>?
     private let tickers: [String]
     private var cachedPrices: [String: Double] = [:]
 
-    private let serverURL = Constants.WebSocket.serverURL
-    private let interval = Constants.WebSocket.sendInterval
-    private let fluctuation = Constants.WebSocket.fluctuation
-
     init(tickers: [String] = StockCatalog.symbols.map { $0.symbol }) {
         self.tickers = tickers
-        super.init()
-        session = URLSession(configuration: .default, delegate: self, delegateQueue: OperationQueue())
+
+        let (statusStream, statusContinuation) = AsyncStream.makeStream(of: ConnectionStatus.self)
+        self.statusStream = statusStream
+        self.statusContinuation = statusContinuation
+
+        let (priceStream, priceContinuation) = AsyncStream.makeStream(of: [PriceUpdate].self)
+        self.priceStream = priceStream
+        self.priceContinuation = priceContinuation
+    }
+
+    deinit {
+        feedLoop?.cancel()
+        statusContinuation.finish()
+        priceContinuation.finish()
     }
 
     func connect() {
-        guard let url = URL(string: serverURL) else { return }
-        status = .connecting
-        socketTask = session.webSocketTask(with: url)
-        socketTask?.resume()
-    }
+        guard let url = URL(string: Constants.WebSocket.serverURL) else { return }
 
-    func disconnect() {
-        killTimer()
-        socketTask?.cancel(with: .goingAway, reason: nil)
-        socketTask = nil
-        status = .disconnected
-    }
+        disconnect()
 
-    // MARK: - Timer
+        let session = URLSession(configuration: .default)
+        let task = session.webSocketTask(with: url)
+        task.resume()
 
-    private func kickoffTimer() {
-        timerSub = Timer.publish(every: interval, on: .main, in: .common)
-            .autoconnect()
-            .sink { [weak self] _ in self?.sendPrices() }
-    }
+        self.session = session
+        self.webSocketTask = task
+        setStatus(.connecting)
 
-    private func killTimer() {
-        timerSub?.cancel()
-        timerSub = nil
-    }
+        feedLoop = Task { [weak self] in
+            guard let self else { return }
 
-    // MARK: - WebSocket I/O
+            do {
+                // first successful round-trip confirms connection
+                let batch = self.generatePrices()
+                try await self.send(batch, on: task)
+                let echo = try await self.receive(from: task)
 
-    private func sendPrices() {
-        let batch = tickers.map { ticker -> PriceUpdate in
-            let prev = cachedPrices[ticker] ?? Double.random(in: 50...400)
-            let next = (prev * Double.random(in: fluctuation) * 100).rounded() / 100
-            cachedPrices[ticker] = next
-            return PriceUpdate(symbol: ticker, price: next, timestamp: Date())
-        }
+                self.setStatus(.connected)
+                self.priceContinuation.yield(echo)
 
-        guard let data = try? JSONEncoder().encode(batch),
-              let payload = String(data: data, encoding: .utf8) else { return }
-
-        // send to echo server, then listen for the bounce-back
-        socketTask?.send(.string(payload)) { [weak self] err in
-            if err == nil { self?.listenForEcho() }
-        }
-    }
-
-    private func listenForEcho() {
-        socketTask?.receive { [weak self] result in
-            switch result {
-            case .success(.string(let raw)):
-                if let data = raw.data(using: .utf8),
-                   let decoded = try? JSONDecoder().decode([PriceUpdate].self, from: data) {
-                    DispatchQueue.main.async { self?.priceUpdates = decoded }
+                // steady-state loop
+                while !Task.isCancelled {
+                    try await Task.sleep(for: .seconds(Constants.WebSocket.sendInterval))
+                    let prices = self.generatePrices()
+                    try await self.send(prices, on: task)
+                    let received = try await self.receive(from: task)
+                    self.priceContinuation.yield(received)
                 }
-            case .failure:
-                DispatchQueue.main.async { self?.status = .disconnected }
-            default:
-                break
+            } catch {
+                if !Task.isCancelled {
+                    self.setStatus(.disconnected)
+                }
             }
         }
     }
-}
 
-extension WebSocketService: PriceFeedProvider {
-    var statusPublisher: AnyPublisher<ConnectionStatus, Never> {
-        $status.eraseToAnyPublisher()
-    }
-    var pricePublisher: AnyPublisher<[PriceUpdate], Never> {
-        $priceUpdates.eraseToAnyPublisher()
-    }
-}
-
-// MARK: - Delegate
-
-extension WebSocketService: URLSessionWebSocketDelegate {
-
-    func urlSession(_ session: URLSession,
-                    webSocketTask: URLSessionWebSocketTask,
-                    didOpenWithProtocol proto: String?) {
-        // print("WS connected")
-        status = .connected
-        kickoffTimer()
+    func disconnect() {
+        feedLoop?.cancel()
+        feedLoop = nil
+        webSocketTask?.cancel(with: .goingAway, reason: nil)
+        webSocketTask = nil
+        session?.invalidateAndCancel()
+        session = nil
+        setStatus(.disconnected)
     }
 
-    func urlSession(_ session: URLSession,
-                    webSocketTask: URLSessionWebSocketTask,
-                    didCloseWith code: URLSessionWebSocketTask.CloseCode,
-                    reason: Data?) {
-        killTimer()
-        status = .disconnected
+    // MARK: - Private
+
+    private func setStatus(_ status: ConnectionStatus) {
+        currentStatus = status
+        statusContinuation.yield(status)
+    }
+
+    private func generatePrices() -> [PriceUpdate] {
+        tickers.map { ticker in
+            let prev = cachedPrices[ticker] ?? Double.random(in: 50...400)
+            let next = (prev * Double.random(in: Constants.WebSocket.fluctuation) * 100).rounded() / 100
+            cachedPrices[ticker] = next
+            return PriceUpdate(symbol: ticker, price: next, timestamp: Date())
+        }
+    }
+
+    private func send(_ batch: [PriceUpdate], on task: URLSessionWebSocketTask) async throws {
+        let data = try JSONEncoder().encode(batch)
+        guard let json = String(data: data, encoding: .utf8) else { return }
+        try await task.send(.string(json))
+    }
+
+    private func receive(from task: URLSessionWebSocketTask) async throws -> [PriceUpdate] {
+        let message = try await task.receive()
+        guard case .string(let raw) = message,
+              let data = raw.data(using: .utf8) else { return [] }
+        return try JSONDecoder().decode([PriceUpdate].self, from: data)
     }
 }

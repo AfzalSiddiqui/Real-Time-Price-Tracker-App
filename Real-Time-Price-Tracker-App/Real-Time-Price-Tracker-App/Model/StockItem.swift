@@ -6,12 +6,11 @@
 //
 
 import Foundation
-import SwiftUI
 
-struct StockItem: Identifiable, Equatable {
+struct StockItem: Identifiable, Equatable, Sendable {
     let id: String          // ticker e.g. "AAPL"
     let name: String
-    let description: String
+    let about: String
     var price: Double
     var previousPrice: Double
 
@@ -22,40 +21,14 @@ struct StockItem: Identifiable, Equatable {
     }
 }
 
-enum PriceDirection {
+enum PriceDirection: Sendable {
     case up, down, unchanged
-
-    var arrowName: String {
-        switch self {
-        case .up: return "arrow.up"
-        case .down: return "arrow.down"
-        case .unchanged: return "minus"
-        }
-    }
-
-    var color: Color {
-        switch self {
-        case .up: return .green
-        case .down: return .red
-        case .unchanged: return .gray
-        }
-    }
-}
-
-enum ConnectionStatus: Equatable {
-    case connected, disconnected, connecting
-}
-
-struct PriceUpdate: Codable, Equatable {
-    let symbol: String
-    let price: Double
-    let timestamp: Date
 }
 
 // MARK: - Catalog
 
 enum StockCatalog {
-    static let symbols: [(symbol: String, name: String, description: String)] = [
+    static let symbols: [(symbol: String, name: String, about: String)] = [
         ("AAPL", "Apple Inc.",
          "Consumer electronics and software. Known for iPhone, Mac, iPad, and services like iCloud and Apple Music."),
         ("GOOG", "Alphabet Inc.",
@@ -114,7 +87,7 @@ enum StockCatalog {
             return StockItem(
                 id: entry.symbol,
                 name: entry.name,
-                description: entry.description,
+                about: entry.about,
                 price: base,
                 previousPrice: base
             )
