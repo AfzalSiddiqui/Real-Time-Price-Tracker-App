@@ -1,72 +1,150 @@
-# Real-Time Price Tracker App
+AI-powered plant intelligence, health analysis, 3D reconstruction, and AR visualization platform.
 
-SwiftUI app that tracks live stock prices for 25 symbols using a WebSocket echo server. Prices update every 2 seconds with visual indicators for price movement.
+FloraLens AI transforms a smartphone camera into an intelligent plant scanner. Users can capture a plant, identify its species, analyze its health, measure its structure, monitor growth over time, and visualize it as an interactive 3D model or in augmented reality.
 
-## Overview
+✨ Features
+🌱 Plant Identification — Recognize plant species using computer vision and AI.
+🔬 Health Analysis — Analyze leaves for potential disease, discoloration, and visible stress.
+📏 Plant Measurement — Estimate plant height, canopy size, and leaf characteristics.
+🧊 3D Reconstruction — Create an interactive 3D representation of a scanned plant.
+🥽 AR Visualization — Place and inspect plants in the real environment.
+📈 Growth Tracking — Compare scans over time to monitor plant development.
+🤖 AI Insights — Generate plant descriptions, observations, and care recommendations.
+📸 Scan History — Maintain a timeline of previously scanned plants.
+📦 3D Export — Export supported models for external 3D applications.
+🏗️ Architecture
+                    FloraLens AI
+                         │
+             ┌───────────┴───────────┐
+             │                       │
+        iOS Application          AI Backend
+             │                       │
+      ┌──────┼───────┐          ┌────┴─────┐
+      │      │       │          │          │
+   Vision  ARKit  RealityKit  ML Models  LLM
+      │      │       │          │          │
+      └──────┴───────┘          └────┬─────┘
+             │                       │
+             └───────────┬───────────┘
+                         │
+                    Plant Profile
+                         │
+              ┌──────────┼──────────┐
+              │          │          │
+           Health      Growth       3D/AR
+           Analysis   Tracking   Visualization
+🛠️ Technology Stack
+iOS
+Swift
+SwiftUI
+ARKit
+RealityKit
+Vision
+Core ML
+Core Image
+Metal
+Model I/O
+USDZ
+Swift Concurrency
+Backend
+Python
+FastAPI
+PostgreSQL
+Object Storage
+REST APIs
+AI/ML
+Computer Vision
+Plant Classification
+Leaf/Disease Detection
+Image Analysis
+LLM-powered plant insights
+📱 Application Flow
+Open App
+   ↓
+Start Plant Scan
+   ↓
+Capture Plant
+   ↓
+AI Identification
+   ↓
+Health Analysis
+   ↓
+Measurements
+   ↓
+Create Plant Profile
+   ↓
+3D Reconstruction
+   ↓
+AR Visualization
+   ↓
+Track Growth
+🌱 Plant Profile
 
-The app connects to `wss://ws.postman-echo.com/raw` and simulates a real-time price feed. Every 2 seconds it generates random price updates for each symbol, sends them to the echo server, and uses the response to update the UI. The list stays sorted by price (highest first) and re-sorts automatically on every update.
+Each scanned plant can maintain a digital profile:
 
-There are two screens — a feed screen showing all 25 stocks, and a detail screen you get to by tapping any row. Both screens stay in sync since they share the same ViewModel, so there's only one WebSocket connection running at a time. Rows briefly flash green/red on price changes, and a toast pops up when the connection status changes.
+Species
+ ├── Common Name
+ ├── Scientific Name
+ └── Confidence Score
 
-Deep links are supported — `stocks://symbol/AAPL` opens the detail screen directly.
 
-## Screens
+Health
+ ├── Overall Health
+ ├── Leaf Condition
+ └── Potential Issues
 
-**Feed Screen**
-- Scrollable list with symbol name, current price, and green ↑ / red ↓ arrows
-- Top bar: connection status dot (left) and Start/Stop toggle (right)
-- Rows flash green or red for 1 second on price change
-- Toast notification on connect/disconnect/connecting
 
-**Detail Screen**
-- Symbol name in the navigation bar
-- Large price display with direction indicator
-- Company description in a grouped box
+Measurements
+ ├── Height
+ ├── Canopy Width
+ └── Leaf Count
 
-## Architecture
 
-MVVM with protocol-based service layer. The ViewModel (`PriceTrackerViewModel`) is created as a `@StateObject` at the app level and shared via `@EnvironmentObject`.
+Growth
+ ├── Previous Scans
+ ├── Growth Rate
+ └── Timeline
 
-The WebSocket layer sits behind a `PriceFeedProvider` protocol — the ViewModel depends on the abstraction, not the concrete `WebSocketService`. This keeps things testable and follows dependency inversion. The service exposes Combine publishers (`statusPublisher`, `pricePublisher`), and the ViewModel subscribes to these for all data flow. No callbacks, no delegates leaking into the ViewModel — just Combine end to end.
 
-`URLSessionWebSocketTask` handles the actual connection, with a delegate for lifecycle events. Navigation is `NavigationStack` with value-based routing, and deep links go through `.onOpenURL`.
+AI Insights
+ ├── Plant Description
+ ├── Observations
+ └── Care Recommendations
+🔮 Future Roadmap
+ Real-time plant detection
+ Advanced 3D reconstruction
+ Improved disease classification
+ Plant-to-plant comparison
+ Growth prediction
+ Garden mapping
+ Multi-plant AR scenes
+ Offline Core ML inference
+ AI-powered plant recommendations
+ Cloud synchronization
+ Plant health analytics dashboard
+🎯 Potential Use Cases
 
-All hardcoded values (URLs, intervals, strings) live in a single `Constants.swift` file.
+Home Gardening
+Identify plants and monitor their health and growth.
 
-## Running the App
+Nurseries
+Create digital plant catalogs with 3D/AR experiences.
 
-1. Open `Real-Time-Price-Tracker-App.xcodeproj` in Xcode 26+
-2. Pick an iOS 26 simulator
-3. Cmd+R to build and run
-4. Hit **Start** to kick off the price feed
+Agriculture
+Support visual crop monitoring and early detection of plant stress.
 
-To test deep links:
-```
-xcrun simctl openurl booted "stocks://symbol/AAPL"
-```
+Landscaping
+Build digital inventories and preview plants in outdoor environments.
 
-## Tests
+E-commerce
+Allow customers to visualize plants in their homes before purchasing.
 
-21 unit tests across 3 files covering models, ViewModel logic, and service state. Run with Cmd+U in Xcode.
+🔐 Privacy
 
-## Project Structure
+FloraLens AI is designed with a privacy-first approach. Where possible, image processing and ML inference can be performed directly on the device, reducing the need to upload personal camera data to the cloud.
 
-```
-Real-Time-Price-Tracker-App/
-├── Model/
-│   └── StockItem.swift          # StockItem, PriceUpdate, PriceDirection, StockCatalog
-├── ViewModels/
-│   └── PriceTrackerViewModel.swift
-├── Views/
-│   ├── FeedView.swift           # Main list + toast
-│   ├── StockItemListView.swift  # Single row
-│   ├── SymbolDetailView.swift   # Detail screen
-│   └── SplashScreenView.swift
-├── Services/
-│   └── WebSocketService.swift   # PriceFeedProvider protocol + WebSocket impl
-├── Utilities/
-│   └── Constants.swift          # All app constants in one place
-├── ContentView.swift
-├── Real_Time_Price_Tracker_AppApp.swift
-└── Info.plist                   # URL scheme for deep links
-```
+📄 License
+
+This project is intended as an open-source research and portfolio project. Add your preferred license before publishing.
+
+FloraLens AI — See. Understand. Grow.
